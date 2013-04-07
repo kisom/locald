@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
         "os/exec"
+        "strings"
 )
 
 const (
@@ -19,7 +20,7 @@ func init() {
 }
 
 func main() {
-        var shouldInstall = flag.Bool("-more-features")
+        shouldInstall := flag.Bool("more-features", false, "add more features")
 	flag.Parse()
 
         if *shouldInstall {
@@ -45,23 +46,24 @@ func moreFeatures() {
                 panic("invalid operating system!")
         }
         uname := string(sysName)
+        uname = strings.TrimSpace(uname)
         switch uname {
         case "Linux":
                 linux()
         case "Darwin":
-                install([]string{"brew", "install", "nginx"})
+                install("brew", "install", "nginx")
         case "OpenBSD":
-                install([]string{"pkg_add", "-vi", "nginx"})
+                install("pkg_add", "-vi", "nginx")
         case "FreeBSD":
-                install([]string{"pkg_add", "-r", "nginx"})
+                install("pkg_add", "-r", "nginx")
         default:
                 fmt.Println("[!] unrecognised system", uname)
                 os.Exit(1)
         }
 }
 
-func install(installer []string) {
-        out, err := exec.Command(installer...).Output()
+func install(name string, installer ...string) {
+        out, err := exec.Command(name, installer...).Output()
         if err != nil {
                 fmt.Printf("[!] error adding more features: %s\n", err.Error())
                 os.Exit(1)
@@ -71,14 +73,14 @@ func install(installer []string) {
 }
 
 func linux() {
-        if path, err := exec.LookPath("apt-get"); err == nil {
-                install([]string{"apt-get", "install", "nginx"})
+        if _, err := exec.LookPath("apt-get"); err == nil {
+                install("apt-get", "install", "nginx")
                 return
-        } else if path, err = exec.LookPath("pacman"); err == nil {
-                install([]string{"pacman", "-s", "nginx"})
+        } else if _, err = exec.LookPath("pacman"); err == nil {
+                install("pacman", "-s", "nginx")
                 return
-        } else if path, err = exec.LookPath("yum"); err == nil {
-                install([]string{"yum", "install", "nginx"})
+        } else if _, err = exec.LookPath("yum"); err == nil {
+                install("yum", "install", "nginx")
                 return
         } else {
                 fmt.Printf("[!] no package manager found")
